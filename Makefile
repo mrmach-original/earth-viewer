@@ -5,18 +5,27 @@ CONTENTS_DIR = $(APP_BUNDLE)/Contents
 RESOURCES_DIR = $(CONTENTS_DIR)/Resources
 MACOS_DIR = $(CONTENTS_DIR)/MacOS
 
-SWIFT_FILES = main.swift Assets.swift
-FRAMEWORKS = -framework Cocoa -framework SceneKit
-SWIFT_FLAGS = 
+# Source directories
+SOURCES_DIR = Sources/EarthViewer
+CONFIG_DIR = Config
+ASSETS_DIR = Resources/Assets
+
+# Source files
+SWIFT_FILES = $(SOURCES_DIR)/Views/main.swift \
+              $(SOURCES_DIR)/Utils/SecurityUtils.swift \
+              $(SOURCES_DIR)/Models/Assets.swift
+
+FRAMEWORKS = -framework Cocoa -framework SceneKit -framework CryptoKit
+SWIFT_FLAGS = -I$(SOURCES_DIR)
 
 # Earth texture variables
-EARTH_IMAGE1 = build/earth1.jpg
-EARTH_IMAGE2 = build/earth2.jpg
-EARTH_IMAGE3 = build/earth3.jpg
-EARTH_DOWNLOAD1 = build/earth_download1.jpg
-EARTH_DOWNLOAD2 = build/goes_east.jpg
-EARTH_DOWNLOAD3 = build/goes_west.jpg
-EARTH_COMPOSITE = build/cloud_composite.jpg
+EARTH_IMAGE1 = $(ASSETS_DIR)/earth1.jpg
+EARTH_IMAGE2 = $(ASSETS_DIR)/earth2.jpg
+EARTH_IMAGE3 = $(ASSETS_DIR)/earth3.jpg
+EARTH_DOWNLOAD1 = $(ASSETS_DIR)/downloads/earth_download1.jpg
+EARTH_DOWNLOAD2 = $(ASSETS_DIR)/downloads/goes_east.jpg
+EARTH_DOWNLOAD3 = $(ASSETS_DIR)/downloads/goes_west.jpg
+EARTH_COMPOSITE = $(ASSETS_DIR)/cloud_composite.jpg
 
 # Image sources
 # Blue Marble (Base image)
@@ -32,6 +41,56 @@ IMAGEMAGICK := $(shell command -v convert 2> /dev/null)
 .PHONY: all clean run monitor
 
 all: $(APP_BUNDLE)
+
+# Create the app bundle and copy all resources
+$(APP_BUNDLE): build/$(APP_NAME) $(EARTH_IMAGE1) $(EARTH_IMAGE2) $(EARTH_IMAGE3) | build_dirs
+	@echo "Creating app bundle..."
+	@cp build/$(APP_NAME) "$(MACOS_DIR)/"
+	@cp $(CONFIG_DIR)/Info.plist "$(CONTENTS_DIR)/"
+	@cp $(EARTH_IMAGE1) "$(RESOURCES_DIR)/earth1.jpg"
+	@cp $(EARTH_IMAGE2) "$(RESOURCES_DIR)/earth2.jpg"
+	@cp $(EARTH_IMAGE3) "$(RESOURCES_DIR)/earth3.jpg"
+	@cp $(CONFIG_DIR)/hello.entitlements "$(CONTENTS_DIR)/"
+	@echo "Build complete: $(APP_BUNDLE)"
+
+# Compile the Swift files
+build/$(APP_NAME): $(SWIFT_FILES) | build_dirs
+	@echo "Compiling Swift files..."
+	@swiftc -o $@ $(SWIFT_FILES) $(FRAMEWORKS) $(SWIFT_FLAGS)
+
+# Create necessary directories
+build_dirs:
+	@echo "Creating directories..."
+	@mkdir -p build
+	@mkdir -p "$(MACOS_DIR)"
+	@mkdir -p "$(RESOURCES_DIR)"
+	@mkdir -p "$(ASSETS_DIR)/downloads"
+
+# Clean build artifacts
+clean:
+	@echo "Cleaning..."
+	@rm -rf build
+	@rm -rf *.o
+	@rm -rf *.dSYM
+	@rm -rf $(APP_NAME).app
+	@rm -rf "$(ASSETS_DIR)/downloads"
+	@echo "Clean complete"
+
+# Run the application
+run: $(APP_BUNDLE)
+	@echo "Running application..."
+	@open $(APP_BUNDLE)
+
+# Monitor application logs
+monitor:
+	@echo "Monitoring Hello.app logs..."
+	@log stream --predicate 'process == "Hello"' --style compact
+
+# Add a run-and-monitor target that builds, runs, and monitors
+run-and-monitor: $(APP_BUNDLE)
+	@echo "Running and monitoring application..."
+	@open $(APP_BUNDLE) & \
+	log stream --predicate 'process == "Hello"' --style compact
 
 # Download and process Earth textures
 $(EARTH_IMAGE1): $(EARTH_DOWNLOAD1)
@@ -71,14 +130,14 @@ $(EARTH_COMPOSITE): $(EARTH_DOWNLOAD2) $(EARTH_DOWNLOAD3)
 	@convert $(EARTH_DOWNLOAD2) -resize 2048x1024! \
 		-gravity center -extent 2048x1024 \
 		-distort Perspective '0,0 0,0  2048,0 2048,0  2048,1024 1024,1024  0,1024 0,1024' \
-		build/goes_east_warped.png
+		$(ASSETS_DIR)/downloads/goes_east_warped.png
 	# Process GOES-West
 	@convert $(EARTH_DOWNLOAD3) -resize 2048x1024! \
 		-gravity center -extent 2048x1024 \
 		-distort Perspective '0,0 1024,0  2048,0 2048,0  2048,1024 2048,1024  0,1024 1024,1024' \
-		build/goes_west_warped.png
+		$(ASSETS_DIR)/downloads/goes_west_warped.png
 	# Combine images
-	@convert build/goes_east_warped.png build/goes_west_warped.png \
+	@convert $(ASSETS_DIR)/downloads/goes_east_warped.png $(ASSETS_DIR)/downloads/goes_west_warped.png \
 		-compose blend -composite \
 		-brightness-contrast 10x20 \
 		$(EARTH_COMPOSITE)
@@ -94,52 +153,4 @@ $(EARTH_DOWNLOAD2): | build_dirs
 
 $(EARTH_DOWNLOAD3): | build_dirs
 	@echo "Downloading GOES-West image..."
-	@curl -f -L -o $(EARTH_DOWNLOAD3) $(EARTH_URL3)
-
-# Create the app bundle and copy all resources
-$(APP_BUNDLE): build/$(APP_NAME) $(EARTH_IMAGE1) $(EARTH_IMAGE2) $(EARTH_IMAGE3) | build_dirs
-	@echo "Creating app bundle..."
-	@cp build/$(APP_NAME) "$(MACOS_DIR)/"
-	@cp Info.plist "$(CONTENTS_DIR)/"
-	@cp $(EARTH_IMAGE1) "$(RESOURCES_DIR)/earth1.jpg"
-	@cp $(EARTH_IMAGE2) "$(RESOURCES_DIR)/earth2.jpg"
-	@cp $(EARTH_IMAGE3) "$(RESOURCES_DIR)/earth3.jpg"
-	@cp hello.entitlements "$(CONTENTS_DIR)/"
-	@echo "Build complete: $(APP_BUNDLE)"
-
-# Compile the Swift files
-build/$(APP_NAME): $(SWIFT_FILES) | build_dirs
-	@echo "Compiling Swift files..."
-	@swiftc -o $@ $(SWIFT_FILES) $(FRAMEWORKS) $(SWIFT_FLAGS)
-
-# Create necessary directories
-build_dirs:
-	@echo "Creating directories..."
-	@mkdir -p build
-	@mkdir -p "$(MACOS_DIR)"
-	@mkdir -p "$(RESOURCES_DIR)"
-
-# Clean build artifacts
-clean:
-	@echo "Cleaning..."
-	@rm -rf build
-	@rm -rf *.o
-	@rm -rf *.dSYM
-	@rm -rf $(APP_NAME).app
-	@echo "Clean complete"
-
-# Run the application (for testing)
-run: $(APP_BUNDLE)
-	@echo "Running application..."
-	@open $(APP_BUNDLE) 
-
-# Monitor application logs
-monitor:
-	@echo "Monitoring Hello.app logs..."
-	@log stream --predicate 'process == "Hello"' --style compact
-
-# Add a run-and-monitor target that builds, runs, and monitors
-run-and-monitor: $(APP_BUNDLE)
-	@echo "Running and monitoring application..."
-	@open $(APP_BUNDLE) & \
-	log stream --predicate 'process == "Hello"' --style compact 
+	@curl -f -L -o $(EARTH_DOWNLOAD3) $(EARTH_URL3) 
