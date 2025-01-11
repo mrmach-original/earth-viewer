@@ -10,6 +10,7 @@ A modern Hello World application featuring an interactive 3D Earth globe with re
 - [x] Base texture (NASA Blue Marble)
 - [x] Window resizing support
 - [x] Basic error handling
+- [ ] Iterative testing and debugging
 
 ## Phase 2: Satellite Integration ✅
 - [x] GOES-East overlay implementation
