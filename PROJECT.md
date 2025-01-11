@@ -11,6 +11,12 @@ A modern Hello World application featuring an interactive 3D Earth globe with re
 - [x] Window resizing support
 - [x] Basic error handling
 - [ ] Iterative testing and debugging
+    - [ ] Fix globe bounce area extending outside window
+    - [ ] Fix application pause when clicking GOES buttons
+    - [ ] Update satellite imagery status to show last update time
+    - [ ] Increase globe size for better visibility
+    - [ ] Add rotation toggle button
+    - [ ] Fix GOES-West overlay visibility
 
 ## Phase 2: Satellite Integration ✅
 - [x] GOES-East overlay implementation
