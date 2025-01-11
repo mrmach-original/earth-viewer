@@ -2,6 +2,37 @@
 
 A modern take on the classic "Hello World" program, displaying a 3D Earth globe with satellite imagery overlays.
 
+## GitHub Setup
+
+1. Configure Git (replace with your information):
+   ```bash
+   git config --global user.name "Your Name"
+   git config --global user.email "your.email@example.com"
+   ```
+
+2. Create a new repository on GitHub:
+   - Go to https://github.com/new
+   - Name: `earth-viewer`
+   - Description: "A modern Hello World with 3D Earth visualization"
+   - Choose "Public" or "Private"
+   - Don't initialize with README (we already have one)
+
+3. Create a Personal Access Token (PAT):
+   - Go to GitHub.com → Profile picture → Settings
+   - Scroll to "Developer settings" → "Personal access tokens" → "Tokens (classic)"
+   - Click "Generate new token" → "Generate new token (classic)"
+   - Name: "earth-viewer-access"
+   - Set expiration as needed
+   - Select scopes: check `repo` for repository access
+   - Click "Generate token" and copy it immediately
+
+4. Link and push to GitHub (replace `YOUR-TOKEN`):
+   ```bash
+   git remote add origin https://YOUR-TOKEN@github.com/YOUR-USERNAME/earth-viewer.git
+   git branch -M main
+   git push -u origin main
+   ```
+
 ## Features
 
 - Interactive 3D Earth globe with smooth counter-clockwise rotation
